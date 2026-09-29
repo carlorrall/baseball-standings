@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Baseball — MLB Standings</title>
+  <meta name="description" content="A spinning 3D baseball that opens the MLB standings for the American and National League.">
+  <meta name="theme-color" content="#fbf8f0">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23f5f2ea' stroke='%23d8d2c4'/%3E%3Cpath d='M9.5 4.5Q16 16 9.5 27.5M22.5 4.5Q16 16 22.5 27.5' fill='none' stroke='%23b5232b' stroke-width='2' stroke-dasharray='2 1.6'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Besley:wght@500;700;800&family=Sometype+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-view="home">
+
+  <!-- Front page: the ball -->
+  <main id="home" class="view is-active">
+    <div id="stage" role="button" tabindex="0" aria-label="Spinning baseball. Press to open the MLB standings."></div>
+  </main>
+
+  <!-- Standings -->
+  <main id="standings" class="view" aria-hidden="true">
+    <header class="bar">
+      <a id="back" class="mark" href="#" aria-label="Back to the baseball">
+        <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+          <circle cx="16" cy="16" r="14.5" fill="#fff" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M9.5 4.5Q16 16 9.5 27.5M22.5 4.5Q16 16 22.5 27.5" fill="none" stroke="#b5232b" stroke-width="1.8" stroke-dasharray="1.9 1.7" stroke-linecap="round"/>
+        </svg>
+        <span>Standings</span>
+      </a>
+
+      <nav class="switch" role="tablist" aria-label="League">
+        <button role="tab" data-league="AL" aria-selected="true">American League</button>
+        <button role="tab" data-league="NL" aria-selected="false" tabindex="-1">National League</button>
+      </nav>
+
+      <span id="updated" class="updated"></span>
+    </header>
+
+    <div class="content">
+      <p id="eyebrow" class="eyebrow">&nbsp;</p>
+      <h1 id="leagueTitle">American League.</h1>
+      <section id="divisions" class="divisions" aria-live="polite"></section>
+      <footer class="credit">Data and logos © MLB Advanced Media. Not affiliated with MLB.</footer>
+    </div>
+  </main>
+
+  <noscript><p style="position:fixed;inset:0;display:grid;place-items:center;font-family:sans-serif">This page needs JavaScript to draw the baseball.</p></noscript>
+  <script src="app.js" defer></script>
+</body>
+</html>

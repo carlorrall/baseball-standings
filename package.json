@@ -1,0 +1,19 @@
+{
+  "name": "baseball-standings",
+  "version": "1.0.0",
+  "description": "Spinning 3D baseball that opens the MLB standings",
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --minify --format=iife --target=es2020 --outfile=app.js && node scripts/standalone.mjs",
+    "watch": "esbuild src/main.js --bundle --format=iife --outfile=app.js --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "private": true
+}

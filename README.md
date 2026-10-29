@@ -10,10 +10,10 @@ Open `index.html` in a browser — no server needed. (Or host the folder anywher
 ## Edit it
 
 ```
-src/data.js       fetches live standings from the MLB Stats API
+src/data.js       fetches live standings + postseason series from the MLB Stats API
 src/ball.js       the three.js baseball (leather texture, seam, stitches, lighting)
-src/standings.js  renders division + wild-card tables, playoff status, league switch
-src/main.js       view routing (#/standings/al, #/standings/nl)
+src/standings.js  renders division + wild-card tables, the postseason bracket and games, tabs
+src/main.js       view routing (#/standings/al, #/standings/nl, #/postseason)
 styles.css        all styling
 app.js            built bundle (generated)
 ```

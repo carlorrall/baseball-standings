@@ -9,13 +9,14 @@ let ball = null;
 
 const standings = initStandings(standingsView, {
   onLeagueChange: (league) => {
-    // keep the URL in sync so a refresh / shared link lands on the same league
-    const target = `#/standings/${league.toLowerCase()}`;
+    // keep the URL in sync so a refresh / shared link lands on the same view
+    const target = league === 'PS' ? '#/postseason' : `#/standings/${league.toLowerCase()}`;
     if (location.hash !== target) history.replaceState(null, '', target);
   },
 });
 
 function parseHash() {
+  if (/^#\/postseason/i.test(location.hash)) return { view: 'standings', league: 'PS' };
   const m = location.hash.match(/^#\/standings(?:\/(al|nl))?/i);
   return m ? { view: 'standings', league: (m[1] || 'al').toUpperCase() } : { view: 'home' };
 }

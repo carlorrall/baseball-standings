@@ -48,6 +48,7 @@ function toTeam(t) {
     wcgb: t.wildCardGamesBack,
     wcRank: t.wildCardRank ? Number(t.wildCardRank) : null,
     divRank: Number(t.divisionRank),
+    leagueRank: Number(t.leagueRank),
     l10: l10 ? `${l10.wins}-${l10.losses}` : '–',
     streak: t.streak?.streakCode || '–',
     status: statusOf(t),
@@ -93,4 +94,87 @@ export async function loadStandings(season = new Date().getFullYear()) {
   out.updated = updated ? new Date(updated) : null;
   out.final = final;
   return out;
+}
+
+/* ------------------------------------------------------------------ *
+ *  Postseason
+ * ------------------------------------------------------------------ */
+
+// Six teams per league: division winners are seeds 1–3 (by record), wild cards 4–6.
+// Returns Map(teamId -> { seed, league, team })
+function seedsFrom(standings) {
+  const seeds = new Map();
+  for (const league of Object.keys(LEAGUES)) {
+    const { divisions, wildCard } = standings[league];
+    divisions
+      .map((d) => d.teams[0])
+      .filter(Boolean)
+      .sort((a, b) => a.leagueRank - b.leagueRank)
+      .forEach((team, i) => seeds.set(team.id, { seed: i + 1, league, team }));
+    wildCard.slice(0, 3).forEach((team, i) => seeds.set(team.id, { seed: i + 4, league, team }));
+  }
+  return seeds;
+}
+
+export const ROUNDS = {
+  F: 'Wild Card',
+  D: 'Division Series',
+  L: 'Championship Series',
+  W: 'World Series',
+};
+
+function toSeries(entry, seeds) {
+  const games = entry.games || [];
+  const first = games[0];
+  if (!first) return null;
+  const bestOf = first.gamesInSeries;
+  const round = first.gameType;
+
+  const side = (g, which) => {
+    const t = g.teams[which];
+    return { id: t.team.id, abbr: t.team.abbreviation, nick: t.team.clubName || t.team.teamName || t.team.name, score: t.score, win: !!t.isWinner };
+  };
+  // team order: higher seed first
+  const ids = [first.teams.home.team.id, first.teams.away.team.id];
+  const played = games
+    .filter((g) => g.status.abstractGameState === 'Final' && !/cancel|postpon/i.test(g.status.detailedState))
+    .map((g) => ({
+      n: g.seriesGameNumber,
+      date: g.officialDate,
+      away: side(g, 'away'),
+      home: side(g, 'home'),
+    }));
+  const teams = ids
+    .map((id) => {
+      const g = first.teams.home.team.id === id ? first.teams.home : first.teams.away;
+      const info = seeds.get(id);
+      return {
+        id,
+        nick: g.team.clubName || g.team.teamName || g.team.name,
+        abbr: g.team.abbreviation,
+        seed: info?.seed ?? null,
+        league: info?.league ?? null,
+        wins: played.filter((p) => (p.home.id === id && p.home.win) || (p.away.id === id && p.away.win)).length,
+      };
+    })
+    .sort((a, b) => (a.seed ?? 9) - (b.seed ?? 9));
+
+  const need = Math.ceil(bestOf / 2);
+  const winner = teams.find((t) => t.wins >= need) || null;
+  const league = round === 'W' ? null : teams[0].league || (first.seriesDescription || '').slice(0, 2);
+  return { round, league, bestOf, name: first.seriesDescription, teams, games: played, winner, done: !!winner };
+}
+
+// Returns null when the postseason hasn't started (no series scheduled yet).
+// Otherwise { season, series: [...], champion, done }
+export async function loadPostseason(standings) {
+  const url = `https://statsapi.mlb.com/api/v1/schedule/postseason/series?season=${standings.season}&sportId=1&hydrate=team`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`MLB API responded ${res.status}`);
+  const json = await res.json();
+  const seeds = seedsFrom(standings);
+  const series = (json.series || []).map((s) => toSeries(s, seeds)).filter(Boolean);
+  if (!series.length) return null;
+  const ws = series.find((s) => s.round === 'W');
+  return { season: standings.season, series, champion: ws?.winner || null, done: !!ws?.done };
 }

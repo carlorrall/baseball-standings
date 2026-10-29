@@ -1,4 +1,6 @@
 import { LEAGUES, STATUS, ROUNDS, loadStandings, loadPostseason, logoUrl } from './data.js';
+import { createHighlights } from './highlights.js';
+import { createDerby } from './derby.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
@@ -173,7 +175,7 @@ export function initStandings(root, { onLeagueChange } = {}) {
   const grid = root.querySelector('#divisions');
   const title = root.querySelector('#leagueTitle');
   const eyebrow = root.querySelector('#eyebrow');
-  const updated = root.querySelector('#updated');
+  const derbyEl = root.querySelector('#derby');
   const tabs = [...root.querySelectorAll('.switch [data-league]')];
 
   const psTab = tabs.find((t) => t.dataset.league === 'PS');
@@ -183,7 +185,9 @@ export function initStandings(root, { onLeagueChange } = {}) {
   let post = null;
   let loading = null;
 
-  const VIEWS = { AL: LEAGUES.AL.name, NL: LEAGUES.NL.name, PS: 'Postseason' };
+  const VIEWS = { AL: LEAGUES.AL.name, NL: LEAGUES.NL.name, PS: 'Postseason', HL: 'Highlights', HR: 'Home Run Derby' };
+  const highlights = createHighlights(grid);
+  let derby = null; // built the first time the tab is opened
 
   function load() {
     grid.innerHTML = '<p class="state">Loading standings…</p>';
@@ -193,7 +197,6 @@ export function initStandings(root, { onLeagueChange } = {}) {
         post = await loadPostseason(d).catch((err) => { console.error(err); return null; });
         data = d;
         psTab.hidden = !post;
-        updated.textContent = d.updated ? `Updated ${fmtUpdated(d.updated)}` : '';
         if (current === 'PS' && !post) render('AL', { animate: false });
         else { setEyebrow(); build(); }
       })
@@ -207,14 +210,32 @@ export function initStandings(root, { onLeagueChange } = {}) {
   }
 
   function setEyebrow() {
+    if (current === 'HR') { eyebrow.textContent = 'Batting practice · Ten outs'; return; }
     if (!data) return;
-    eyebrow.textContent = current === 'PS'
-      ? `${post.season} · Postseason${post.done ? ' · Final' : ''}`
-      : `${data.season} · Regular season${data.final ? ' · Final' : ''}`;
+    if (current === 'HL') eyebrow.textContent = `${data.season} · Recaps and video from MLB.com`;
+    else if (current === 'PS') eyebrow.textContent = `${post.season} · Postseason${post.done ? ' · Final' : ''}`;
+    else {
+      eyebrow.textContent =
+        `${data.season} · Regular season${data.final ? ' · Final' : ''}` +
+        (data.updated && !data.final ? ` · Updated ${fmtUpdated(data.updated)}` : '');
+    }
   }
 
   function build() {
+    const isDerby = current === 'HR';
+    grid.hidden = isDerby;
+    derbyEl.hidden = !isDerby;
+    if (isDerby) {
+      (derby ||= createDerby(derbyEl)).start();
+      return;
+    }
+    derby?.stop();
     if (!data) return;
+    if (current === 'HL') {
+      highlights.show(data.season);
+      grid.classList.remove('is-swapping');
+      return;
+    }
     if (current === 'PS') {
       grid.innerHTML = postseasonView(post);
       grid.classList.remove('is-swapping');
@@ -252,8 +273,8 @@ export function initStandings(root, { onLeagueChange } = {}) {
 
     const swap = () => {
       title.textContent = `${VIEWS[league]}.`;
-      // "Postseason." is one long word that can't wrap, so it gets a slightly smaller size
-      title.classList.toggle('is-long', league === 'PS');
+      // "Postseason." and "Highlights." are long single words that can't wrap, so they get a slightly smaller size
+      title.classList.toggle('is-long', league === 'PS' || league === 'HL');
       grid.dataset.view = league;
       setEyebrow();
       build();
@@ -281,5 +302,12 @@ export function initStandings(root, { onLeagueChange } = {}) {
     }
   });
 
-  return { show: render, reload: load, get league() { return current; } };
+  return {
+    show: render,
+    reload: load,
+    // leaving the standings page: stop the game loop
+    pause: () => derby?.stop(),
+    get league() { return current; },
+    get derby() { return derby; },
+  };
 }

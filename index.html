@@ -34,16 +34,18 @@
         <button role="tab" data-league="AL" aria-selected="true">American League</button>
         <button role="tab" data-league="NL" aria-selected="false" tabindex="-1">National League</button>
         <button role="tab" data-league="PS" aria-selected="false" tabindex="-1" hidden>Postseason</button>
+        <button role="tab" data-league="HL" aria-selected="false" tabindex="-1">Highlights</button>
+        <button role="tab" data-league="HR" aria-selected="false" tabindex="-1">Derby</button>
       </nav>
 
-      <span id="updated" class="updated"></span>
     </header>
 
     <div class="content">
       <p id="eyebrow" class="eyebrow">&nbsp;</p>
       <h1 id="leagueTitle">American League.</h1>
       <section id="divisions" class="divisions" aria-live="polite"></section>
-      <footer class="credit">Data and logos © MLB Advanced Media. Not affiliated with MLB.</footer>
+      <section id="derby" class="derby" aria-label="Home Run Derby game" hidden></section>
+      <footer class="credit">Data, logos and highlights © MLB Advanced Media. Not affiliated with MLB.</footer>
     </div>
   </main>
 

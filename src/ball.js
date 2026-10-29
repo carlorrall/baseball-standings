@@ -195,6 +195,36 @@ function buildSeamMeshes(redMat, ridgeMat, holeMat) {
 }
 
 /* ------------------------------------------------------------------ *
+ *  The ball itself (radius 1) — also used by the home run derby
+ * ------------------------------------------------------------------ */
+let materials = null; // the leather textures are slow to bake, so build them once
+
+export function makeBaseball({ segments = [192, 128] } = {}) {
+  if (!materials) {
+    materials = {
+      leather: new THREE.MeshPhysicalMaterial({
+        map: makeLeatherColor(),
+        bumpMap: makeGrainBump(),
+        bumpScale: 0.2,
+        roughness: 0.66,
+        metalness: 0,
+        sheen: 0.22,
+        sheenRoughness: 0.55,
+        sheenColor: new THREE.Color(0xfff6e8),
+      }),
+      thread: new THREE.MeshStandardMaterial({ color: 0xa11f2b, roughness: 0.78, metalness: 0 }),
+      ridge: new THREE.MeshStandardMaterial({ color: 0xeae6dc, roughness: 0.8 }),
+      hole: new THREE.MeshStandardMaterial({ color: 0x7a2a2a, roughness: 0.9 }),
+    };
+  }
+  const body = new THREE.Group();
+  const sphere = new THREE.Mesh(new THREE.SphereGeometry(R, ...segments), materials.leather);
+  body.add(sphere);
+  body.add(buildSeamMeshes(materials.thread, materials.ridge, materials.hole));
+  return { body, sphere };
+}
+
+/* ------------------------------------------------------------------ *
  *  Scene
  * ------------------------------------------------------------------ */
 export function createBall(container, { onOpen } = {}) {
@@ -225,28 +255,10 @@ export function createBall(container, { onOpen } = {}) {
   rim.position.set(4, 1.5, -3);
   scene.add(rim);
 
-  // materials
-  const leather = new THREE.MeshPhysicalMaterial({
-    map: makeLeatherColor(),
-    bumpMap: makeGrainBump(),
-    bumpScale: 0.2,
-    roughness: 0.66,
-    metalness: 0,
-    sheen: 0.22,
-    sheenRoughness: 0.55,
-    sheenColor: new THREE.Color(0xfff6e8),
-  });
-  const thread = new THREE.MeshStandardMaterial({ color: 0xa11f2b, roughness: 0.78, metalness: 0 });
-  const ridgeMat = new THREE.MeshStandardMaterial({ color: 0xeae6dc, roughness: 0.8 });
-  const holeMat = new THREE.MeshStandardMaterial({ color: 0x7a2a2a, roughness: 0.9 });
-
   // ball = tilted group -> spinning body
   const tilt = new THREE.Group();
   tilt.rotation.set(0.32, 0, -0.42);
-  const body = new THREE.Group();
-  const sphere = new THREE.Mesh(new THREE.SphereGeometry(R, 192, 128), leather);
-  body.add(sphere);
-  body.add(buildSeamMeshes(thread, ridgeMat, holeMat));
+  const { body, sphere } = makeBaseball();
   tilt.add(body);
   const float = new THREE.Group();
   float.add(tilt);

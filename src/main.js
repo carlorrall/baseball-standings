@@ -7,16 +7,27 @@ const standingsView = document.getElementById('standings');
 
 let ball = null;
 
+// each tab has its own address, so a refresh or shared link lands on the same tab
+const HASHES = {
+  AL: '#/standings/al',
+  NL: '#/standings/nl',
+  PS: '#/postseason',
+  HL: '#/highlights',
+  HR: '#/derby',
+};
+
 const standings = initStandings(standingsView, {
   onLeagueChange: (league) => {
     // keep the URL in sync so a refresh / shared link lands on the same view
-    const target = league === 'PS' ? '#/postseason' : `#/standings/${league.toLowerCase()}`;
+    const target = HASHES[league];
     if (location.hash !== target) history.replaceState(null, '', target);
   },
 });
 
 function parseHash() {
-  if (/^#\/postseason/i.test(location.hash)) return { view: 'standings', league: 'PS' };
+  for (const [key, hash] of Object.entries(HASHES)) {
+    if (key !== 'AL' && key !== 'NL' && location.hash.toLowerCase().startsWith(hash)) return { view: 'standings', league: key };
+  }
   const m = location.hash.match(/^#\/standings(?:\/(al|nl))?/i);
   return m ? { view: 'standings', league: (m[1] || 'al').toUpperCase() } : { view: 'home' };
 }
@@ -41,6 +52,7 @@ function route() {
     // stop rendering once the ball has faded out
     setTimeout(() => { if (document.body.dataset.view === 'standings') ball && ball.stop(); }, 700);
   } else {
+    standings.pause();
     if (!ball) {
       ball = createBall(stage, { onOpen: () => { location.hash = '#/standings/al'; } });
     } else {
